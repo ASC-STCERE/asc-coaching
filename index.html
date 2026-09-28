@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>ASC Coaching — Suivi</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0e">
+<link rel="icon" href="/asc-wellness/favicon.png">
+<link rel="apple-touch-icon" href="/asc-wellness/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="ASC Coaching">
+<meta name="mobile-web-app-capable" content="yes">
+
+<script src="config.js"></script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:#0d0d0e; overflow:hidden; font-family:system-ui, sans-serif; }
+  #cadre { position:fixed; inset:0; width:100%; height:100%; border:0;
+           padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+
+  #splash { position:fixed; inset:0; background:#0d0d0e; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; gap:24px; z-index:10; transition:opacity .45s; }
+  #splash.off { opacity:0; pointer-events:none; }
+  #splash img { width:120px; height:auto; }
+  #splash .titre { color:#f4c400; font-size:13px; font-weight:700; letter-spacing:.32em; text-transform:uppercase; }
+  #splash .sous { color:#6d6d75; font-size:12px; letter-spacing:.18em; text-transform:uppercase; margin-top:-14px; }
+  .barre { width:120px; height:3px; background:#26262b; border-radius:2px; overflow:hidden; }
+  .barre i { display:block; height:100%; width:35%; background:#f4c400; border-radius:2px; animation:va 1.1s ease-in-out infinite; }
+  @keyframes va { 0%{margin-left:-35%} 100%{margin-left:100%} }
+
+  #sansLien { position:fixed; inset:0; z-index:12; background:#0d0d0e; color:#f2f2f4;
+              display:none; flex-direction:column; justify-content:center; padding:30px; gap:12px; }
+  #sansLien h2 { font-size:22px; font-weight:800; }
+  #sansLien p { color:#b4b4bc; font-size:15px; line-height:1.5; }
+
+  #rappels { position:fixed; inset:0; z-index:20; display:flex; align-items:flex-end;
+             background:rgba(0,0,0,.62); transition:opacity .3s; }
+  #rappels.cache { opacity:0; pointer-events:none; }
+  #rappels .feuille { width:100%; max-width:520px; margin:0 auto; background:#17171a;
+             border-top:3px solid #f4c400; border-radius:18px 18px 0 0;
+             padding:26px 22px calc(22px + env(safe-area-inset-bottom)); color:#f2f2f4; }
+  #rappels h2 { font-size:21px; font-weight:800; line-height:1.2; margin-bottom:8px; }
+  #rappels p { font-size:15px; line-height:1.45; color:#b4b4bc; }
+  .actions { display:flex; gap:10px; margin-top:20px; }
+  .actions button { font:inherit; font-size:16px; font-weight:700; border:0; border-radius:10px; padding:14px 16px; cursor:pointer; }
+  #activer { flex:1; background:#f4c400; color:#0d0d0e; }
+  #activer:disabled { opacity:.45; }
+  #plustard { background:transparent; color:#8b8b94; }
+  #info { margin-top:14px; min-height:1.4em; font-size:14px; }
+  #info.ok { color:#6fd48a; }
+  #info.erreur { color:#ff8a7a; }
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <img src="/asc-wellness/icone-512.png" alt="ASC Coaching">
+  <div class="titre">ASC Coaching</div>
+  <div class="sous">Suivi privé</div>
+  <div class="barre"><i></i></div>
+</div>
+
+<div id="sansLien">
+  <h2>Lien personnel manquant</h2>
+  <p>Ouvre le lien qu'Arnaud t'a envoyé par message : il contient ton identifiant personnel.
+     Une fois ouvert, installe l'app sur ton écran d'accueil et tu n'auras plus besoin du lien.</p>
+</div>
+
+<iframe id="cadre" title="Suivi ASC Coaching"></iframe>
+
+<div id="rappels" class="cache" aria-hidden="true">
+  <div class="feuille" role="dialog" aria-labelledby="rt">
+    <h2 id="rt">Ne rate plus ton suivi</h2>
+    <p>Tu recevras une notification uniquement si tu as oublié de remplir. Une seule fois à activer.</p>
+    <div class="actions">
+      <button id="plustard" type="button">Plus tard</button>
+      <button id="activer" type="button">Activer les rappels</button>
+    </div>
+    <p id="info" role="status"></p>
+  </div>
+</div>
+
+<script>
+  var CLE_CODE = 'asc_coaching_code';
+  var CLE_REPORT = 'asc_coaching_plus_tard';
+
+  function lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  // Code personnel : dans l'adresse la première fois, puis mémorisé
+  var params = new URLSearchParams(location.search);
+  var code = (params.get('c') || '').trim().toLowerCase();
+  if (code) ecrire(CLE_CODE, code); else code = lire(CLE_CODE) || '';
+
+  if (!code) {
+    document.getElementById('splash').classList.add('off');
+    document.getElementById('sansLien').style.display = 'flex';
+  } else {
+    var cadre = document.getElementById('cadre');
+    cadre.src = LIEN_EXEC + '?c=' + encodeURIComponent(code);
+    cadre.addEventListener('load', function () {
+      setTimeout(function () { document.getElementById('splash').classList.add('off'); }, 300);
+    });
+    setTimeout(function () { document.getElementById('splash').classList.add('off'); }, 9000);
+  }
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+  /* ================= RAPPELS ================= */
+  var OS = null;
+  var panneau = document.getElementById('rappels');
+  var bouton = document.getElementById('activer');
+  var info = document.getElementById('info');
+
+  function idClient(c) {
+    return 'CLI_' + String(c).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  }
+  function ouvrirPanneau() { panneau.classList.remove('cache'); panneau.setAttribute('aria-hidden', 'false'); }
+  function fermerPanneau() { panneau.classList.add('cache'); panneau.setAttribute('aria-hidden', 'true'); }
+  function message(t, c) { info.textContent = t; info.className = c || ''; }
+
+  document.getElementById('plustard').addEventListener('click', function () {
+    ecrire(CLE_REPORT, String(Date.now())); fermerPanneau();
+  });
+
+  bouton.addEventListener('click', function () {
+    if (!OS) return;
+    bouton.disabled = true;
+    message('Accepte la demande de ton téléphone…');
+    OS.Notifications.requestPermission().then(function () {
+      if (!OS.Notifications.permission) {
+        message('Les notifications sont bloquées. Autorise-les dans les réglages du téléphone, puis rouvre l\'app.', 'erreur');
+        bouton.disabled = false;
+        return;
+      }
+      return OS.login(idClient(code)).then(function () {
+        ecrire('asc_coaching_actif', '1');
+        message('C\'est activé. Tu seras relancé seulement en cas d\'oubli.', 'ok');
+        setTimeout(fermerPanneau, 2200);
+      });
+    }).catch(function () {
+      message('L\'activation n\'a pas abouti. Réessaie dans un instant.', 'erreur');
+      bouton.disabled = false;
+    });
+  });
+
+  (function () {
+    if (!code) return;
+    var forcer = location.hash.indexOf('rappels') !== -1;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var installee = navigator.standalone === true ||
+                    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (ios && !installee) return;                       // iPhone : uniquement depuis l'icône
+    if (!('Notification' in window)) return;
+    if (typeof ONESIGNAL_APP_ID === 'undefined' || ONESIGNAL_APP_ID.indexOf('COLLE_ICI') === 0) return;
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(function (OneSignal) {
+      return OneSignal.init({
+        appId: ONESIGNAL_APP_ID,
+        serviceWorkerPath: 'asc-coaching/sw.js',
+        serviceWorkerParam: { scope: '/asc-coaching/' }
+      }).then(function () {
+        OS = OneSignal;
+        if (lire('asc_coaching_actif') && OneSignal.Notifications.permission && !forcer) {
+          OneSignal.login(idClient(code)).catch(function () {});
+          return;
+        }
+        if (Notification.permission === 'denied' && !forcer) return;
+        var report = parseInt(lire(CLE_REPORT) || '0', 10);
+        if (!forcer && Date.now() - report < 2 * 24 * 3600 * 1000) return;
+        setTimeout(ouvrirPanneau, 1800);
+      });
+    });
+  })();
+</script>
+</body>
+</html>
