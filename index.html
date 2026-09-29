@@ -102,7 +102,7 @@
     document.getElementById('sansLien').style.display = 'flex';
   } else {
     var cadre = document.getElementById('cadre');
-    cadre.src = LIEN_EXEC + '?c=' + encodeURIComponent(code);
+     cadre.src = LIEN_EXEC + '?cli=' + encodeURIComponent(code);
     cadre.addEventListener('load', function () {
       setTimeout(function () { document.getElementById('splash').classList.add('off'); }, 300);
     });
