@@ -7,8 +7,8 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0e">
-<link rel="icon" href="/asc-wellness/favicon.png">
-<link rel="apple-touch-icon" href="/asc-wellness/apple-touch-icon.png">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="ASC Coaching">
@@ -26,7 +26,7 @@
   #splash { position:fixed; inset:0; background:#0d0d0e; display:flex; flex-direction:column;
             align-items:center; justify-content:center; gap:24px; z-index:10; transition:opacity .45s; }
   #splash.off { opacity:0; pointer-events:none; }
-  #splash img { width:120px; height:auto; }
+  #splash img { width:150px; height:auto; }
   #splash .titre { color:#f4c400; font-size:13px; font-weight:700; letter-spacing:.32em; text-transform:uppercase; }
   #splash .sous { color:#6d6d75; font-size:12px; letter-spacing:.18em; text-transform:uppercase; margin-top:-14px; }
   .barre { width:120px; height:3px; background:#26262b; border-radius:2px; overflow:hidden; }
@@ -59,7 +59,7 @@
 <body>
 
 <div id="splash">
-  <img src="/asc-wellness/icone-512.png" alt="ASC Coaching">
+  <img src="logo-asc.png" alt="ASC Coaching">
   <div class="titre">ASC Coaching</div>
   <div class="sous">Suivi privé</div>
   <div class="barre"><i></i></div>
@@ -102,7 +102,7 @@
     document.getElementById('sansLien').style.display = 'flex';
   } else {
     var cadre = document.getElementById('cadre');
-     cadre.src = LIEN_EXEC + '?cli=' + encodeURIComponent(code);
+    cadre.src = LIEN_EXEC + '?cli=' + encodeURIComponent(code);
     cadre.addEventListener('load', function () {
       setTimeout(function () { document.getElementById('splash').classList.add('off'); }, 300);
     });
